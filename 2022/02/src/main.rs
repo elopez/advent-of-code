@@ -23,60 +23,20 @@ struct Match {
 }
 
 impl Match {
-    fn from_string_part_1(s: &str) -> Match {
+    fn from_string_part_1(s: &str) -> Self {
         let mut iter = s.split(" ");
         let them = convert_input_part_1(iter.next().unwrap());
         let us = convert_input_part_1(iter.next().unwrap());
-        let result = Match::match_result(them, us);
+        let result = match_result(them, us);
         Match { us, result }
     }
 
-    fn from_string_part_2(s: &str) -> Match {
+    fn from_string_part_2(s: &str) -> Self {
         let mut iter = s.split(" ");
         let them = convert_input_part_1(iter.next().unwrap());
         let result = convert_input_part_2(iter.next().unwrap());
-        let us = Match::match_play(them, result);
+        let us = match_play(them, result);
         Match { us, result }
-    }
-
-    fn match_result(them: Move, us: Move) -> Result {
-        match them {
-            Move::ROCK => match us {
-                Move::ROCK => Result::DRAW,
-                Move::PAPER => Result::WIN,
-                Move::SCISSORS => Result::LOSE,
-            },
-            Move::PAPER => match us {
-                Move::ROCK => Result::LOSE,
-                Move::PAPER => Result::DRAW,
-                Move::SCISSORS => Result::WIN,
-            },
-            Move::SCISSORS => match us {
-                Move::ROCK => Result::WIN,
-                Move::PAPER => Result::LOSE,
-                Move::SCISSORS => Result::DRAW,
-            },
-        }
-    }
-
-    fn match_play(them: Move, result: Result) -> Move {
-        match them {
-            Move::ROCK => match result {
-                Result::DRAW => Move::ROCK,
-                Result::WIN => Move::PAPER,
-                Result::LOSE => Move::SCISSORS,
-            },
-            Move::PAPER => match result {
-                Result::LOSE => Move::ROCK,
-                Result::DRAW => Move::PAPER,
-                Result::WIN => Move::SCISSORS,
-            },
-            Move::SCISSORS => match result {
-                Result::WIN => Move::ROCK,
-                Result::LOSE => Move::PAPER,
-                Result::DRAW => Move::SCISSORS,
-            },
-        }
     }
 
     fn score(self) -> i64 {
@@ -105,6 +65,46 @@ fn convert_input_part_2(item: &str) -> Result {
     }
 }
 
+fn match_result(them: Move, us: Move) -> Result {
+    match them {
+        Move::ROCK => match us {
+            Move::ROCK => Result::DRAW,
+            Move::PAPER => Result::WIN,
+            Move::SCISSORS => Result::LOSE,
+        },
+        Move::PAPER => match us {
+            Move::ROCK => Result::LOSE,
+            Move::PAPER => Result::DRAW,
+            Move::SCISSORS => Result::WIN,
+        },
+        Move::SCISSORS => match us {
+            Move::ROCK => Result::WIN,
+            Move::PAPER => Result::LOSE,
+            Move::SCISSORS => Result::DRAW,
+        },
+    }
+}
+
+fn match_play(them: Move, result: Result) -> Move {
+    match them {
+        Move::ROCK => match result {
+            Result::DRAW => Move::ROCK,
+            Result::WIN => Move::PAPER,
+            Result::LOSE => Move::SCISSORS,
+        },
+        Move::PAPER => match result {
+            Result::LOSE => Move::ROCK,
+            Result::DRAW => Move::PAPER,
+            Result::WIN => Move::SCISSORS,
+        },
+        Move::SCISSORS => match result {
+            Result::WIN => Move::ROCK,
+            Result::LOSE => Move::PAPER,
+            Result::DRAW => Move::SCISSORS,
+        },
+    }
+}
+
 fn solve(input: impl BufRead) -> (i64, i64) {
     let lines = input.lines();
     let moves = lines
@@ -119,12 +119,12 @@ fn solve(input: impl BufRead) -> (i64, i64) {
     let score_p1 = moves
         .iter()
         .map(|p| Match::from_string_part_1(&p))
-        .map(Match::score)
+        .map(|m| m.score())
         .sum();
     let score_p2 = moves
         .iter()
         .map(|p| Match::from_string_part_2(&p))
-        .map(Match::score)
+        .map(|m| m.score())
         .sum();
 
     (score_p1, score_p2)
