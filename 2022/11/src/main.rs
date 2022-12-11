@@ -26,7 +26,7 @@ struct Monkey {
 
 impl Monkey {
     fn play_top(&mut self, relief: Option<usize>) -> Option<(usize, usize)> {
-        if self.items.len() == 0 {
+        if self.items.is_empty() {
             return None;
         }
 
@@ -69,14 +69,14 @@ fn parse_monkey(input: &str) -> IResult<&str, Monkey> {
     let (input, _) = tag("\n  Test: divisible by ")(input)?;
     let (input, test) = map_res(digit1, usize::from_str)(input)?;
     let (input, _) = tag("\n    If true: throw to monkey ")(input)?;
-    let (input, mtrue) = map_res(digit1, usize::from_str)(input)?;
+    let (input, monkey_true) = map_res(digit1, usize::from_str)(input)?;
     let (input, _) = tag("\n    If false: throw to monkey ")(input)?;
-    let (input, mfalse) = map_res(digit1, usize::from_str)(input)?;
+    let (input, monkey_false) = map_res(digit1, usize::from_str)(input)?;
 
     Ok((
         input,
         Monkey {
-            items: items,
+            items,
             operation: match sign {
                 '+' => Operation::Sum(oper.parse().unwrap()),
                 '*' => match oper {
@@ -85,9 +85,9 @@ fn parse_monkey(input: &str) -> IResult<&str, Monkey> {
                 },
                 _ => panic!("unknown"),
             },
-            test: test,
-            monkey_true: mtrue,
-            monkey_false: mfalse,
+            test,
+            monkey_true,
+            monkey_false,
             plays: 0,
         },
     ))
@@ -113,8 +113,8 @@ fn solve_p1(mut monkeys: Vec<Monkey>) -> usize {
 
 fn solve_p2(mut monkeys: Vec<Monkey>) -> usize {
     let mut lcm = 1;
-    for m in 0..monkeys.len() {
-        lcm = lcm.lcm(&monkeys[m].test);
+    for m in &monkeys {
+        lcm = lcm.lcm(&m.test);
     }
 
     for _ in 0..10000 {
