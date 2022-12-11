@@ -1,9 +1,11 @@
 extern crate nom;
 use nom::{
-    branch::alt, bytes::complete::tag, character::complete::*, multi::separated_list1, IResult,
+    branch::alt, bytes::complete::tag, character::complete::*, combinator::map_res,
+    multi::separated_list1, IResult,
 };
 use num_integer::Integer;
 use std::io::{self, BufRead};
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone)]
 enum Operation {
@@ -59,22 +61,22 @@ fn parse_monkey(input: &str) -> IResult<&str, Monkey> {
     let (input, _monkey_nr) = digit1(input)?;
 
     let (input, _) = tag(":\n  Starting items: ")(input)?;
-    let (input, items) = separated_list1(tag(", "), digit1)(input)?;
+    let (input, items) = separated_list1(tag(", "), map_res(digit1, usize::from_str))(input)?;
     let (input, _) = tag("\n  Operation: new = old ")(input)?;
     let (input, sign) = alt((char('*'), char('+')))(input)?;
     let (input, _) = multispace1(input)?;
     let (input, oper) = alt((tag("old"), digit1))(input)?;
     let (input, _) = tag("\n  Test: divisible by ")(input)?;
-    let (input, test) = digit1(input)?;
+    let (input, test) = map_res(digit1, usize::from_str)(input)?;
     let (input, _) = tag("\n    If true: throw to monkey ")(input)?;
-    let (input, mtrue) = digit1(input)?;
+    let (input, mtrue) = map_res(digit1, usize::from_str)(input)?;
     let (input, _) = tag("\n    If false: throw to monkey ")(input)?;
-    let (input, mfalse) = digit1(input)?;
+    let (input, mfalse) = map_res(digit1, usize::from_str)(input)?;
 
     Ok((
         input,
         Monkey {
-            items: items.iter().map(|n| n.parse().unwrap()).collect(),
+            items: items,
             operation: match sign {
                 '+' => Operation::Sum(oper.parse().unwrap()),
                 '*' => match oper {
@@ -83,9 +85,9 @@ fn parse_monkey(input: &str) -> IResult<&str, Monkey> {
                 },
                 _ => panic!("unknown"),
             },
-            test: test.parse().unwrap(),
-            monkey_true: mtrue.parse().unwrap(),
-            monkey_false: mfalse.parse().unwrap(),
+            test: test,
+            monkey_true: mtrue,
+            monkey_false: mfalse,
             plays: 0,
         },
     ))
