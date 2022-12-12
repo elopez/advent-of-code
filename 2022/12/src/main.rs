@@ -14,10 +14,10 @@ impl<'a> Pos<'a> {
         if y > 0 && m[x][y] <= m[x][y - 1] + 1 {
             pos.push(Pos(x, y - 1, m));
         }
-        if x + 1 < m.len().try_into().unwrap() && m[x][y] <= m[x + 1][y] + 1 {
+        if x + 1 < m.len() && m[x][y] <= m[x + 1][y] + 1 {
             pos.push(Pos(x + 1, y, m));
         }
-        if y + 1 < m[0].len().try_into().unwrap() && m[x][y] <= m[x][y + 1] + 1 {
+        if y + 1 < m[0].len() && m[x][y] <= m[x][y + 1] + 1 {
             pos.push(Pos(x, y + 1, m));
         }
         pos.into_iter().map(|p| (p, 1)).collect()
@@ -41,16 +41,16 @@ fn solve(input: impl BufRead) -> (usize, usize) {
     let mut start = Pos(0, 0, &tmp);
     let mut goal = Pos(0, 0, &tmp);
 
-    for x in 0..mapvec.len() {
-        for y in 0..mapvec[x].len() {
-            match mapvec[x][y] as char {
-                'E' => {
-                    mapvec[x][y] = 'z' as u8;
+    for (x, row) in mapvec.iter_mut().enumerate() {
+        for (y, v) in row.iter_mut().enumerate() {
+            match v {
+                b'E' => {
+                    *v = b'z';
                     goal.0 = x;
                     goal.1 = y;
                 }
-                'S' => {
-                    mapvec[x][y] = 'a' as u8;
+                b'S' => {
+                    *v = b'a';
                     start.0 = x;
                     start.1 = y;
                 }
@@ -63,7 +63,7 @@ fn solve(input: impl BufRead) -> (usize, usize) {
     goal.2 = &mapvec;
 
     let p1 = dijkstra(&goal, |p| p.successors(), |p| *p == start);
-    let p2 = dijkstra(&goal, |p| p.successors(), |p| p.2[p.0][p.1] == 'a' as u8);
+    let p2 = dijkstra(&goal, |p| p.successors(), |p| p.2[p.0][p.1] == b'a');
 
     (p1.unwrap().1, p2.unwrap().1)
 }
