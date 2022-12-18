@@ -1,4 +1,7 @@
 use std::cmp::max;
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::io::{self, BufRead};
 use std::ops::Add;
 
@@ -57,6 +60,12 @@ fn _show_map(map: &[[char; 7]]) {
     println!();
 }
 
+fn calculate_hash<T: Hash + ?Sized>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
 fn solve(input: String, take_len: usize) -> isize {
     let rock_set = vec![
         Rock {
@@ -75,7 +84,7 @@ fn solve(input: String, take_len: usize) -> isize {
             bits: vec![Pos(0, 0), Pos(0, 1), Pos(1, 0), Pos(1, 1)],
         },
     ];
-    let rocks = rock_set.iter().cycle();
+    let mut rocks = rock_set.iter().cycle();
 
     let movement_list = input
         .chars()
@@ -88,14 +97,25 @@ fn solve(input: String, take_len: usize) -> isize {
     let mut movements = movement_list.iter().cycle();
     let move_down = Pos(-1, 0);
 
-    let mut map = vec![['.'; 7]; take_len * 5];
+    let mut map = vec![['.'; 7]; 100000 * 5];
     let mut spawn_point = Pos(3, 2);
+    let mut wind = 0;
+    let mut seen: HashMap<u64, (isize, usize)> = HashMap::new();
+    let mut iter = 0;
+    let mut delta = 0;
+    let mut jumped = false;
 
-    'outer: for r in rocks.take(take_len) {
+    'outer: loop {
+        if iter >= take_len {
+            break;
+        }
+
+        let r = rocks.next().unwrap();
         let mut rock = r.clone().move_rock(&spawn_point, &map).unwrap();
         //println!("Rock drop spawn @ {:?}: {:?}", spawn_point, rock);
 
         loop {
+            wind += 1;
             let m = movements.next().unwrap();
             if let Some(nr) = rock.move_rock(m, &map) {
                 rock = nr
@@ -108,14 +128,36 @@ fn solve(input: String, take_len: usize) -> isize {
                         map[x as usize][y as usize] = '#';
                         spawn_point.0 = max(spawn_point.0, x + 4);
                     }
+
+                    if wind > movement_list.len() && !jumped {
+                        let (start, end) = ((spawn_point.0 - 20) as usize, spawn_point.0 as usize);
+                        let hash = calculate_hash(&map[start..end]);
+                        if let Some((old_spawn, old_iter)) = seen.insert(
+                            calculate_hash(&(
+                                wind % movement_list.len(),
+                                iter % rock_set.len(),
+                                hash,
+                            )),
+                            (spawn_point.0, iter),
+                        ) {
+                            let jump = (spawn_point.0 - old_spawn) as usize;
+                            let iter_jump = iter - old_iter;
+                            let skip_times = (take_len - iter) / iter_jump;
+                            iter += skip_times * iter_jump;
+                            delta += skip_times * jump;
+                            //println!("cycle! {} {}", iter_jump, jump);
+                            jumped = true;
+                        }
+                    }
                     //_show_map(&map);
+                    iter += 1;
                     continue 'outer;
                 }
             }
         }
     }
 
-    spawn_point.0 - 3
+    spawn_point.0 - 3 + delta as isize
 }
 
 fn main() {
@@ -129,16 +171,23 @@ fn main() {
     let score_p1 = solve(input.clone(), 2022);
     println!("Total score P1: {score_p1}");
 
-    //let score_p2 = solve(input, 1000000000000);
-    //println!("Total score P2: {score_p2}");
+    let score_p2 = solve(input, 1000000000000);
+    println!("Total score P2: {score_p2}");
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn sample_case() {
+    fn sample_case_1() {
         let case = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
         let result = super::solve(case.to_string(), 2022);
         assert_eq!(result, 3068);
+    }
+
+    #[test]
+    fn sample_case_2() {
+        let case = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
+        let result = super::solve(case.to_string(), 1000000000000);
+        assert_eq!(result, 1514285714288);
     }
 }
